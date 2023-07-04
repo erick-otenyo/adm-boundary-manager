@@ -1,0 +1,7 @@
+include README.md
+recursive-include adminboundarymanager *.py
+recursive-include adminboundarymanager *.html
+recursive-include adminboundarymanager/samples *
+recursive-include adminboundarymanager/static *
+recursive-include adminboundarymanager/templates *
+recursive-include adminboundarymanager/locale *.po *.mo
