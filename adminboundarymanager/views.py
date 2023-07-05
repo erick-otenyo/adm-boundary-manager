@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.views import View
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from wagtail.admin import messages
 from wagtail.admin.auth import user_passes_test, user_has_any_page_permission
 
@@ -66,7 +66,7 @@ def load_boundary(request):
                     return render(request, template_name=template, context=context)
 
             messages.success(request, "Boundary data loaded successfully")
-            return redirect(reverse("wagtailadmin_home"))
+            return redirect(reverse("adminboundarymanager_preview_boundary"))
         else:
             context.update({"form": form})
             return render(request, template_name=template, context=context)
@@ -75,6 +75,29 @@ def load_boundary(request):
         context["form"] = form
 
         return render(request, template_name=template, context=context)
+
+
+@user_passes_test(user_has_any_page_permission)
+def preview_boundary(request):
+    template = "adminboundarymanager/boundary_preview.html"
+
+    abm_settings = AdminBoundarySettings.for_request(request)
+    countries = abm_settings.countries.all()
+
+    boundary_tiles_url = abm_settings.boundary_tiles_url
+
+    boundary_tiles_url = request.scheme + '://' + request.get_host() + boundary_tiles_url
+
+    context = {
+        "mapConfig": {
+            "boundaryTilesUrl": boundary_tiles_url,
+            "combinedBbox": abm_settings.combined_countries_bounds
+        },
+        "countries": countries,
+        "load_boundary_url": reverse("adminboundarymanager_load_boundary")
+    }
+
+    return render(request, template, context=context)
 
 
 class AdminBoundaryVectorTileView(View):
@@ -113,5 +136,10 @@ class AdminBoundaryListView(ListAPIView):
     queryset = AdminBoundary.objects.all()
     serializer_class = AdminBoundarySerializer
     filter_backends = [SearchFilter, DjangoFilterBackend]
-    filterset_fields = ["level"]
+    filterset_fields = ["level", "id"]
     search_fields = ["name_0", "name_1", "name_2", "name_3", "name_4"]
+
+
+class AdminBoundaryRetrieveView(RetrieveAPIView):
+    queryset = AdminBoundary.objects.all()
+    serializer_class = AdminBoundarySerializer

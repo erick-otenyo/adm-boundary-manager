@@ -1,13 +1,20 @@
+import json
+
 from django.contrib.gis.db import models
+from django.urls import reverse
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
 from django_countries.widgets import CountrySelectWidget
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
+from shapely import geometry, unary_union
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.contrib.settings.models import BaseSiteSetting
 from wagtail.contrib.settings.registry import register_setting
 from wagtail.models import Orderable
+
+from adminboundarymanager.countries import get_country_info
 
 
 class AdminBoundary(models.Model):
@@ -79,6 +86,23 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
         InlinePanel("countries", heading=_("Countries"), label=_("Country")),
     ]
 
+    @cached_property
+    def combined_countries_bounds(self):
+        polygons = []
+        for country in self.countries.all():
+            country_info = country.country_info
+            if country_info:
+                bbox = country_info.get("bbox")
+                polygon = geometry.box(*bbox, ccw=True)
+                polygons.append(polygon)
+
+        combined_polygon = unary_union(polygons)
+        return list(combined_polygon.bounds)
+
+    @cached_property
+    def boundary_tiles_url(self):
+        return reverse("admin_boundary_tiles", args=[0, 0, 0]).replace("/0/0/0", r"/{z}/{x}/{y}")
+
 
 class Countries(Orderable):
     parent = ParentalKey(AdminBoundarySettings, on_delete=models.CASCADE, related_name='countries')
@@ -87,3 +111,15 @@ class Countries(Orderable):
     panels = [
         FieldPanel("country", widget=CountrySelectWidget()),
     ]
+
+    @cached_property
+    def country_info(self):
+        country_info = get_country_info(self.country.alpha3)
+        return country_info
+
+    @cached_property
+    def country_info_str(self):
+        country_info = get_country_info(self.country.alpha3)
+        if country_info:
+            return json.dumps(country_info)
+        return ""

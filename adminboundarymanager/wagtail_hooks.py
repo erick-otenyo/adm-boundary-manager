@@ -5,13 +5,14 @@ from wagtail.admin.menu import MenuItem
 from wagtail.contrib.modeladmin.options import ModelAdminGroup, ModelAdmin
 
 from .models import AdminBoundarySettings, AdminBoundary
-from .views import load_boundary
+from .views import load_boundary, preview_boundary
 
 
 @hooks.register('register_admin_urls')
 def urlconf_boundarymanager():
     return [
         path('load-boundary/', load_boundary, name='adminboundarymanager_load_boundary'),
+        path('preview-boundary/', preview_boundary, name='adminboundarymanager_preview_boundary'),
     ]
 
 
@@ -43,7 +44,7 @@ class AdminBoundaryManagerAdminGroup(ModelAdminGroupWithHiddenItems):
     def get_submenu_items(self):
         menu_items = super().get_submenu_items()
 
-        boundary_loader = MenuItem(label=_("Boundary Data"), url=reverse("adminboundarymanager_load_boundary"),
+        boundary_loader = MenuItem(label=_("Boundary Data"), url=reverse("adminboundarymanager_preview_boundary"),
                                    icon_name="snippet")
         menu_items.append(boundary_loader)
 
