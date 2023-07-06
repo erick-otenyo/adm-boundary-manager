@@ -1,6 +1,8 @@
 import json
 
 from django.contrib.gis.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +15,7 @@ from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.contrib.settings.models import BaseSiteSetting
 from wagtail.contrib.settings.registry import register_setting
 from wagtail.models import Orderable
+from wagtailcache.cache import clear_cache
 
 from adminboundarymanager.countries import get_country_info
 
@@ -138,3 +141,9 @@ class Countries(Orderable):
         if country_info:
             return json.dumps(country_info)
         return {}
+
+
+# clear cache after saving boundary settings
+@receiver(post_save, sender=AdminBoundarySettings)
+def handle_clear_wagtail_cache(sender, **kwargs):
+    clear_cache()
