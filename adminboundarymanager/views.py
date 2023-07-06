@@ -24,16 +24,20 @@ from .serializers import AdminBoundarySerializer
 def load_boundary(request):
     template = "adminboundarymanager/boundary_loader.html"
 
-    abm_settings = AdminBoundarySettings.for_request(request)
-    countries = [obj.country for obj in abm_settings.countries.all()]
     context = {}
-
     settings_url = reverse(
         "wagtailsettings:edit",
         args=[AdminBoundarySettings._meta.app_label, AdminBoundarySettings._meta.model_name, ],
     )
-
     context.update({"settings_url": settings_url})
+
+    abm_settings = AdminBoundarySettings.for_request(request)
+
+    if abm_settings.data_source != "codabs":
+        context.update({"data_source_unimplemented": True})
+        return render(request, template_name=template, context=context)
+
+    countries = [obj.country for obj in abm_settings.countries.all()]
 
     FormClass = CodAbsBoundaryUploadForm
 

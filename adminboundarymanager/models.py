@@ -86,9 +86,16 @@ class AdminBoundary(models.Model):
 
 @register_setting
 class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
-    BOUNDARY_TYPE_CHOICES = []
+    DATA_SOURCE_CHOICES = (
+        ("codabs", "OCHA Administrative Boundary Common Operational Datasets (COD-ABS)"),
+        ("gadm41", "Global Administrative Areas 4.1 (GADM)")
+    )
+
+    data_source = models.CharField(max_length=100, choices=DATA_SOURCE_CHOICES, default="codabs",
+                                   verbose_name=_("Boundary Data Source"), help_text="Source of the boundaries data")
 
     panels = [
+        FieldPanel("data_source"),
         InlinePanel("countries", heading=_("Countries"), label=_("Country")),
     ]
 
