@@ -11,8 +11,6 @@ class CodAbsBoundaryUploadForm(forms.Form):
         ("3", _("Level 3")),
         ("4", _("Level 4")),
     )
-
-    remove_existing = forms.BooleanField(required=False, widget=forms.HiddenInput)
     country = forms.ChoiceField(required=True, label=_("Country"))
     level = forms.ChoiceField(required=True, choices=LEVEL_CHOICES, label=_("Admin Boundary Level"))
     shp_zip = forms.FileField(required=True, label=_("Country Shapefile ZIP"),

@@ -55,7 +55,7 @@ VALID_GEOM_TYPES = ["Polygon", "MultiPolygon"]
 
 
 @transaction.atomic
-def check_and_load_boundaries(shp_path, country_iso, level, remove_existing=False):
+def check_and_load_boundaries(shp_path, country_code, level, remove_existing=True):
     # set required layermapping fields
     if level == 0:
         required_fields = LEVEL0_BOUNDARY_FIELDS
@@ -117,17 +117,17 @@ def check_and_load_boundaries(shp_path, country_iso, level, remove_existing=Fals
 
         if remove_existing:
             # delete existing boundary data for given country iso and level
-            AdminBoundary.objects.filter(gid_0=country_iso, level=level).delete()
+            AdminBoundary.objects.filter(gid_0=country_code, level=level).delete()
 
         # do layermapping and save
         lm = LayerMapping(AdminBoundary, temp_shapefile_path, layer_mapping_fields)
         lm.save(verbose=True)
 
 
-def load_cod_abs_boundary(shp_zip_path, country_iso, level, remove_existing=True):
+def load_cod_abs_boundary(shp_zip_path, country_code, level, remove_existing=True):
     with tempfile.TemporaryDirectory() as tmpdir:
         # extract shapefile to get .shp file
         shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir)
 
         # load boundaries
-        check_and_load_boundaries(shp_path, country_iso, level, remove_existing)
+        check_and_load_boundaries(shp_path, country_code, level, remove_existing)

@@ -42,11 +42,10 @@ def load_boundary(request):
 
         if form.is_valid():
             shp_zip = form.cleaned_data.get("shp_zip")
-            country = form.cleaned_data.get("country")
+            country_code = form.cleaned_data.get("country")
             level = form.cleaned_data.get("level")
-            remove_existing = form.cleaned_data.get("remove_existing")
 
-            if not country:
+            if not country_code:
                 form.add_error(None, "Please select a country in layer manager settings and try again")
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{shp_zip.name}") as temp_file:
@@ -55,9 +54,8 @@ def load_boundary(request):
 
                 try:
                     load_cod_abs_boundary(shp_zip_path=temp_file.name,
-                                          country_iso=country,
-                                          level=int(level),
-                                          remove_existing=remove_existing)
+                                          country_code=country_code,
+                                          level=int(level))
                 except Exception as e:
                     form.add_error(None, str(e))
                     context.update({"form": form, "has_error": True})
