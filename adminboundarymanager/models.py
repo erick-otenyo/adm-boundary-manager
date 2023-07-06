@@ -87,12 +87,24 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
     ]
 
     @cached_property
+    def countries_list(self):
+        countries = []
+        for country in self.countries.all():
+            countries.append({
+                "name": country.country.name,
+                "code": country.country.code,
+                "alpha3": country.country.alpha3,
+                **country.country_info
+            })
+
+        return countries
+
+    @cached_property
     def combined_countries_bounds(self):
         polygons = []
-        for country in self.countries.all():
-            country_info = country.country_info
-            if country_info:
-                bbox = country_info.get("bbox")
+        for country in self.countries_list:
+            if country.get("bbox"):
+                bbox = country.get("bbox")
                 polygon = geometry.box(*bbox, ccw=True)
                 polygons.append(polygon)
 
@@ -122,4 +134,4 @@ class Countries(Orderable):
         country_info = get_country_info(self.country.alpha3)
         if country_info:
             return json.dumps(country_info)
-        return ""
+        return {}
