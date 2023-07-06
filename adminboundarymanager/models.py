@@ -38,20 +38,23 @@ class AdminBoundary(models.Model):
 
     def __str__(self):
         level = self.level
+        country_name = self.name_0
+
+        prefix = f"{country_name} - Level "
 
         if level == 0:
-            return f"Level {level} - {self.name_0}"
+            return f"{prefix} {level} - {self.name_0}"
 
         if level == 1:
-            return f"Level {level} - {self.name_1}"
+            return f"{prefix} {level} - {self.name_1}"
 
         if level == 2:
-            return f"Level {level} - {self.name_2}"
+            return f"{prefix} {level} - {self.name_2}"
 
         if level == 3:
-            return f"Level {level} - {self.name_3}"
+            return f"{prefix} {level} - {self.name_3}"
 
-        return f"Level {level} - {self.pk}"
+        return f"{prefix} {level} - {self.pk}"
 
     @property
     def bbox(self):
