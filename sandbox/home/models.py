@@ -1,7 +1,9 @@
-from django.db import models
+from django.utils.decorators import method_decorator
 
 from wagtail.models import Page
+from wagtailcache.cache import WagtailCacheMixin, cache_page
 
 
-class HomePage(Page):
+@method_decorator(cache_page, name='serve')
+class HomePage(WagtailCacheMixin, Page):
     pass

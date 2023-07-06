@@ -1,16 +1,18 @@
 import tempfile
 
-from django.core.cache import cache
 from django.db import connection, close_old_connections
 from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views import View
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from wagtail.admin import messages
 from wagtail.admin.auth import user_passes_test, user_has_any_page_permission
+from wagtailcache.cache import cache_page
+from wagtailcache.cache import clear_cache
 
 from .boundary_loader import load_cod_abs_boundary
 from .forms import CodAbsBoundaryUploadForm
@@ -68,8 +70,8 @@ def load_boundary(request):
 
             messages.success(request, "Boundary data loaded successfully")
 
-            # clear any existing vector tiles cache
-            cache.clear()
+            # clear wagtail cache
+            clear_cache()
 
             return redirect(reverse("adminboundarymanager_preview_boundary"))
         else:
@@ -105,6 +107,7 @@ def preview_boundary(request):
     return render(request, template, context=context)
 
 
+@method_decorator(cache_page, name='get')
 class AdminBoundaryVectorTileView(View):
     table_name = "adminboundarymanager_adminboundary"
 
