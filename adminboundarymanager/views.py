@@ -1,5 +1,6 @@
 import tempfile
 
+from django.core.cache import cache
 from django.db import connection, close_old_connections
 from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect
@@ -66,6 +67,10 @@ def load_boundary(request):
                     return render(request, template_name=template, context=context)
 
             messages.success(request, "Boundary data loaded successfully")
+
+            # clear any existing vector tiles cache
+            cache.clear()
+
             return redirect(reverse("adminboundarymanager_preview_boundary"))
         else:
             context.update({"form": form})
