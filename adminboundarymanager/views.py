@@ -126,7 +126,7 @@ class AdminBoundaryVectorTileView(View):
             ),
             mvtgeom AS (
               SELECT ST_AsMVTGeom(ST_Transform(t.geom, 3857), bounds.geom) AS geom,
-                t.name_0, t.name_1, t.name_2, t.name_3, t.name_4, t.gid_0, t.gid_1, t.gid_2, t.gid_3, t.gid_4, t.level
+               t.id, t.name_0, t.name_1, t.name_2, t.name_3, t.name_4, t.gid_0, t.gid_1, t.gid_2, t.gid_3, t.gid_4, t.level
               FROM {self.table_name} t, bounds
               WHERE ST_Intersects(ST_Transform(t.geom, 4326), ST_Transform(bounds.geom, 4326)) {boundary_filter}
             )
