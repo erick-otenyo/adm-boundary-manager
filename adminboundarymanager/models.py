@@ -125,6 +125,14 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
         return list(combined_polygon.bounds)
 
     @cached_property
+    def boundary_search_url(self):
+        return reverse("admin_boundary_search")
+
+    @cached_property
+    def boundary_detail_url(self):
+        return reverse("admin_boundary_detail", args=(1,)).replace("/1", "")
+
+    @cached_property
     def boundary_tiles_url(self):
         return reverse("admin_boundary_tiles", args=[0, 0, 0]).replace("/0/0/0", r"/{z}/{x}/{y}")
 
