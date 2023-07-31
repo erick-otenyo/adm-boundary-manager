@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.gis.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -149,7 +149,7 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
     panels = [
         FieldPanel("data_source"),
         FieldPanel("countries_must_share_boundaries"),
-        InlinePanel("countries", heading=_("Countries"), label=_("Country")),
+        InlinePanel("countries", heading=_("Countries"), label=_("Country Detail")),
     ]
 
     @cached_property
@@ -187,7 +187,7 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
 
 class Country(Orderable):
     parent = ParentalKey(AdminBoundarySettings, on_delete=models.CASCADE, related_name='countries')
-    country = CountryField(blank_label=_("Select Country"), verbose_name=_("country"))
+    country = CountryField(blank_label=_("Select Country"), verbose_name=_("country"), unique=True)
 
     panels = [
         FieldPanel("country", widget=CountrySelectWidget()),
@@ -217,3 +217,15 @@ class Country(Orderable):
 @receiver(post_save, sender=AdminBoundarySettings)
 def handle_clear_wagtail_cache(sender, **kwargs):
     clear_cache()
+
+
+# delete any existing country boundaries after deleting a country
+@receiver(post_delete, sender=Country)
+def after_country_delete(sender, instance, **kwargs):
+    country = instance.country
+
+    # delete by 2-letter code
+    AdminBoundary.objects.filter(gid_0=country.code).delete()
+
+    # delete by 3-letter code
+    AdminBoundary.objects.filter(gid_0=country.alpha3).delete()
