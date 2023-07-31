@@ -91,37 +91,38 @@ class AdminBoundaryForm(WagtailAdminModelForm):
     def is_valid(self):
         form_is_valid = super().is_valid()
 
-        countries_formset = self.formsets.get("countries")
-        countries_cleaned_data = countries_formset.cleaned_data
+        if form_is_valid:
+            countries_formset = self.formsets.get("countries")
+            countries_cleaned_data = countries_formset.cleaned_data
 
-        countries = []
-        for country in countries_cleaned_data:
-            to_delete = country.get("DELETE")
+            countries = []
+            for country in countries_cleaned_data:
+                to_delete = country.get("DELETE")
 
-            if not to_delete:
-                country_obj = Country(country=country.get("country"))
-                countries.append(country_obj)
+                if not to_delete:
+                    country_obj = Country(country=country.get("country"))
+                    countries.append(country_obj)
 
-        cleaned_data = self.cleaned_data
-        countries_must_share_boundaries = cleaned_data.get("countries_must_share_boundaries")
+            cleaned_data = self.cleaned_data
+            countries_must_share_boundaries = cleaned_data.get("countries_must_share_boundaries")
 
-        if countries_must_share_boundaries and len(countries) > 1:
-            bounds_polygons = []
-            for country in countries:
-                bounds_polygons.append(country.country_bounds_polygon)
+            if countries_must_share_boundaries and len(countries) > 1:
+                bounds_polygons = []
+                for country in countries:
+                    bounds_polygons.append(country.country_bounds_polygon)
 
-            union_polygon = bounds_polygons[0]
-            for polygon in bounds_polygons[1:]:
-                union_polygon = union_polygon.union(polygon)
+                union_polygon = bounds_polygons[0]
+                for polygon in bounds_polygons[1:]:
+                    union_polygon = union_polygon.union(polygon)
 
-            connected = isinstance(union_polygon, Polygon)
-            if not connected:
-                error = _("One or more selected countries do not share boundaries. "
-                          "Please make sure all the countries are in one region and share boundaries")
-                # add error
-                self.formsets.get("countries")._non_form_errors.append(error)
+                connected = isinstance(union_polygon, Polygon)
+                if not connected:
+                    error = _("One or more selected countries do not share boundaries. "
+                              "Please make sure all the countries are in one region and share boundaries")
+                    # add error
+                    self.formsets.get("countries")._non_form_errors.append(error)
 
-                return False
+                    return False
 
         return form_is_valid
 
