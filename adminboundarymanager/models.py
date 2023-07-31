@@ -10,7 +10,10 @@ from django_countries.fields import CountryField
 from django_countries.widgets import CountrySelectWidget
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from shapely import geometry, unary_union
+from shapely import geometry, unary_union, Polygon
+from wagtail.admin.forms.models import (
+    WagtailAdminModelForm,
+)
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.contrib.settings.models import BaseSiteSetting
 from wagtail.contrib.settings.registry import register_setting
@@ -84,8 +87,49 @@ class AdminBoundary(models.Model):
         return info
 
 
+class AdminBoundaryForm(WagtailAdminModelForm):
+    def is_valid(self):
+        form_is_valid = super().is_valid()
+
+        countries_formset = self.formsets.get("countries")
+        countries_cleaned_data = countries_formset.cleaned_data
+
+        countries = []
+        for country in countries_cleaned_data:
+            to_delete = country.get("DELETE")
+
+            if not to_delete:
+                country_obj = Country(country=country.get("country"))
+                countries.append(country_obj)
+
+        cleaned_data = self.cleaned_data
+        countries_must_share_boundaries = cleaned_data.get("countries_must_share_boundaries")
+
+        if countries_must_share_boundaries and len(countries) > 1:
+            bounds_polygons = []
+            for country in countries:
+                bounds_polygons.append(country.country_bounds_polygon)
+
+            union_polygon = bounds_polygons[0]
+            for polygon in bounds_polygons[1:]:
+                union_polygon = union_polygon.union(polygon)
+
+            connected = isinstance(union_polygon, Polygon)
+            if not connected:
+                error = _("One or more selected countries do not share boundaries. "
+                          "Please make sure all the countries are in one region and share boundaries")
+                # add error
+                self.formsets.get("countries")._non_form_errors.append(error)
+
+                return False
+
+        return form_is_valid
+
+
 @register_setting
 class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
+    base_form_class = AdminBoundaryForm
+
     DATA_SOURCE_CHOICES = (
         ("codabs", "OCHA Administrative Boundary Common Operational Datasets (COD-ABS)"),
         ("gadm41", "Global Administrative Areas 4.1 (GADM)")
@@ -93,9 +137,17 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
 
     data_source = models.CharField(max_length=100, choices=DATA_SOURCE_CHOICES, default="codabs",
                                    verbose_name=_("Boundary Data Source"), help_text="Source of the boundaries data")
+    countries_must_share_boundaries = models.BooleanField(default=True,
+                                                          verbose_name=_(
+                                                              "Countries must share boundaries - If more than one"),
+                                                          help_text=_(
+                                                              "Validation to ensure that the selected countries share "
+                                                              "boundaries with each other. Used if two or more "
+                                                              "countries are set."))
 
     panels = [
         FieldPanel("data_source"),
+        FieldPanel("countries_must_share_boundaries"),
         InlinePanel("countries", heading=_("Countries"), label=_("Country")),
     ]
 
@@ -114,30 +166,25 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
 
     @cached_property
     def combined_countries_bounds(self):
-        polygons = []
+        bounds_polygons = self.get_country_bounds_polygons()
+        combined_polygon = unary_union(bounds_polygons)
+        return list(combined_polygon.bounds)
+
+    def get_country_bounds_polygons(self):
+        bounds_polygons = []
         for country in self.countries_list:
             if country.get("bbox"):
                 bbox = country.get("bbox")
                 polygon = geometry.box(*bbox, ccw=True)
-                polygons.append(polygon)
-
-        combined_polygon = unary_union(polygons)
-        return list(combined_polygon.bounds)
-
-    @cached_property
-    def boundary_search_url(self):
-        return reverse("admin_boundary_search")
-
-    @cached_property
-    def boundary_detail_url(self):
-        return reverse("admin_boundary_detail", args=(1,)).replace("/1", "")
+                bounds_polygons.append(polygon)
+        return bounds_polygons
 
     @cached_property
     def boundary_tiles_url(self):
         return reverse("admin_boundary_tiles", args=[0, 0, 0]).replace("/0/0/0", r"/{z}/{x}/{y}")
 
 
-class Countries(Orderable):
+class Country(Orderable):
     parent = ParentalKey(AdminBoundarySettings, on_delete=models.CASCADE, related_name='countries')
     country = CountryField(blank_label=_("Select Country"), verbose_name=_("country"))
 
@@ -149,6 +196,13 @@ class Countries(Orderable):
     def country_info(self):
         country_info = get_country_info(self.country.alpha3)
         return country_info
+
+    @cached_property
+    def country_bounds_polygon(self):
+        country_info = self.country_info
+        bbox = country_info.get("bbox")
+        polygon = geometry.box(*bbox, ccw=True)
+        return polygon
 
     @cached_property
     def country_info_str(self):
