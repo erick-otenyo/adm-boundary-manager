@@ -17,49 +17,68 @@
     {% include "wagtailadmin/shared/header.html" with title=header_str icon="upload" %}
 
     <div class="nice-padding">
+        {% if data_source %}
+            <div class="help-block help-info">
+                <svg class="icon icon-help icon" aria-hidden="true">
+                    <use href="#icon-help"></use>
+                </svg>
+                <p><b>Selected Source: {{ data_source.title }}</b></p>
+                <div>
+                    {{ data_source.description }}
+                </div>
+
+                {% if data_source.data_detail_urls %}
+                    <div style="margin-top: 10px">
+                        <b>You can learn more here:</b>
+                        <ul>
+                            {% for link in data_source.data_detail_urls %}
+                                <li>
+                                    <a href="{{ link.url }}" target="_blank"
+                                       rel="noreferrer noopener">{{ link.label }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if data_source.data_download_url %}
+                    <div style="margin-top: 10px">
+                        <b>You can access and download data from the source: </b>
+                        <ul>
+                            <li>
+                                <a href="{{ data_source.data_download_url }}" target="_blank"
+                                   rel="noreferrer noopener">Download from source</a>
+                            </li>
+
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
         <div style="margin-top: 40px;"
              id="upload_form_wrapper">
-            {% if data_source_unimplemented %}
-                <div class="help-block help-info">
-                    <svg class="icon icon-help icon" aria-hidden="true">
-                        <use href="#icon-help"></use>
-                    </svg>
-                    <p>The boundary source you selected in boundary settings is not yet implemented.</p>
-                    <div>
-                        <p>Please select <b>OCHA COD ABS</b> source for now as we work to implement other sources</p>
+            <form action="{% url 'adminboundarymanager_load_boundary' %}" method="POST"
+                  enctype="multipart/form-data">
+                {% if form.non_field_errors %}
+                    <div class="non-field_errors" style="margin-bottom: 20px">
+                        {% include "wagtailadmin/shared/non_field_errors.html" with form=form %}
                     </div>
-                </div>
-                <a href="{{ settings_url }}" class="button bicolor button--icon button-secondary"><span
-                        class="icon-wrapper">
-                    <svg class="icon icon-edit icon" aria-hidden="true">
-                        <use href="#icon-edit"></use>
-                    </svg>
-                </span>Change Source
-                </a>
-            {% else %}
-                <form action="{% url 'adminboundarymanager_load_boundary' %}" method="POST"
-                      enctype="multipart/form-data">
-                    {% if form.non_field_errors %}
-                        <div class="non-field_errors" style="margin-bottom: 20px">
-                            {% include "wagtailadmin/shared/non_field_errors.html" with form=form %}
-                        </div>
-                    {% endif %}
-                    <ul class="fields">
-                        {% csrf_token %}
-                        {% for field in form %}
-                            {% if field.is_hidden %}
-                                {{ field }}
-                            {% else %}
-                                {% include "wagtailadmin/shared/field_as_li.html" %}
-                            {% endif %}
-                        {% endfor %}
-                        <li>
-                            <button type="submit" class="button"> {% trans 'Upload' %}</button>
-                        </li>
-                    </ul>
-                </form>
-            {% endif %}
+                {% endif %}
+                <ul class="fields">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        {% if field.is_hidden %}
+                            {{ field }}
+                        {% else %}
+                            {% include "wagtailadmin/shared/field_as_li.html" %}
+                        {% endif %}
+                    {% endfor %}
+                    <li>
+                        <button type="submit" class="button"> {% trans 'Upload' %}</button>
+                    </li>
+                </ul>
+            </form>
         </div>
+
     </div>
 {% endblock %}
 

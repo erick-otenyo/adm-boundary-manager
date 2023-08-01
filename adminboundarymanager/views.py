@@ -14,9 +14,9 @@ from wagtail.admin.auth import user_passes_test, user_has_any_page_permission
 from wagtailcache.cache import cache_page
 from wagtailcache.cache import clear_cache
 
-from .boundary_loader import load_cod_abs_boundary
-from .forms import CodAbsBoundaryUploadForm
-from .models import AdminBoundarySettings, AdminBoundary
+from .forms import CodAbsBoundaryUploadForm, GADMBoundaryUploadForm, GenericBoundaryUploadForm
+from .loaders import load_cod_abs_boundary, load_gadm_boundary, load_generic_boundary, data_sources
+from .models import AdminBoundarySettings, AdminBoundary, Country
 from .serializers import AdminBoundarySerializer
 
 
@@ -33,33 +33,42 @@ def load_boundary(request):
 
     abm_settings = AdminBoundarySettings.for_request(request)
 
-    if abm_settings.data_source != "codabs":
-        context.update({"data_source_unimplemented": True})
-        return render(request, template_name=template, context=context)
+    context.update({"data_source": data_sources.get(abm_settings.data_source)})
+
+    if abm_settings.data_source == "codabs":
+        form_class = CodAbsBoundaryUploadForm
+        loader_fn = load_cod_abs_boundary
+    elif abm_settings.data_source == "gadm41":
+        form_class = GADMBoundaryUploadForm
+        loader_fn = load_gadm_boundary
+    else:
+        form_class = GenericBoundaryUploadForm
+        loader_fn = load_generic_boundary
 
     countries = [obj.country for obj in abm_settings.countries.all()]
 
-    FormClass = CodAbsBoundaryUploadForm
-
     if request.POST:
-        form = FormClass(countries, request.POST, request.FILES)
+        form = form_class(countries, request.POST, request.FILES)
 
         if form.is_valid():
-            shp_zip = form.cleaned_data.get("shp_zip")
+            file = form.cleaned_data.get("file")
             country_code = form.cleaned_data.get("country")
-            level = form.cleaned_data.get("level")
+            level = None
+
+            if abm_settings.data_source != "gadm41":
+                level = int(form.cleaned_data.get("level"))
 
             if not country_code:
                 form.add_error(None, "Please select a country in layer manager settings and try again")
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{shp_zip.name}") as temp_file:
-                for chunk in shp_zip.chunks():
+            country_option = Country.objects.get(country=country_code)
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.name}") as temp_file:
+                for chunk in file.chunks():
                     temp_file.write(chunk)
 
                 try:
-                    load_cod_abs_boundary(shp_zip_path=temp_file.name,
-                                          country_code=country_code,
-                                          level=int(level))
+                    loader_fn(temp_file.name, country=country_option.country, level=level)
                 except Exception as e:
                     form.add_error(None, str(e))
                     context.update({"form": form, "has_error": True})
@@ -80,7 +89,7 @@ def load_boundary(request):
             context.update({"form": form})
             return render(request, template_name=template, context=context)
     else:
-        form = FormClass(countries)
+        form = form_class(countries)
         context["form"] = form
 
         return render(request, template_name=template, context=context)
@@ -92,6 +101,7 @@ def preview_boundary(request):
 
     abm_settings = AdminBoundarySettings.for_request(request)
     countries = abm_settings.countries.all()
+    boundary_data_source = abm_settings.data_source
 
     boundary_tiles_url = abm_settings.boundary_tiles_url
 
@@ -103,6 +113,7 @@ def preview_boundary(request):
             "combinedBbox": abm_settings.combined_countries_bounds
         },
         "countries": countries,
+        "use_country_alpha3": boundary_data_source == "gadm41",
         "load_boundary_url": reverse("adminboundarymanager_load_boundary")
     }
 

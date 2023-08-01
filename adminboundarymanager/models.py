@@ -35,7 +35,6 @@ class AdminBoundary(models.Model):
     gid_3 = models.CharField(max_length=100, blank=True, null=True)
     gid_4 = models.CharField(max_length=100, blank=True, null=True)
     level = models.IntegerField(blank=True, null=True)
-    size = models.CharField(max_length=100, blank=True, null=True)
 
     geom = models.MultiPolygonField(srid=4326)
 
@@ -133,7 +132,8 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
 
     DATA_SOURCE_CHOICES = (
         ("codabs", "OCHA Administrative Boundary Common Operational Datasets (COD-ABS)"),
-        ("gadm41", "Global Administrative Areas 4.1 (GADM)")
+        ("gadm41", "Global Administrative Areas 4.1 (GADM)"),
+        ("generic", "Generic Data Source")
     )
 
     data_source = models.CharField(max_length=100, choices=DATA_SOURCE_CHOICES, default="codabs",

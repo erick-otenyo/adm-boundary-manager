@@ -21,7 +21,8 @@
                     <select id="country_selector">
                         <option value="all">All Countries</option>
                         {% for country in countries %}
-                            <option value="{{ country.country.code }}"
+                            <option value="{% if use_country_alpha3 %}{{ country.country.alpha3 }}{% else %}
+                                {{ country.country.code }}{% endif %}"
                                     data-info="{{ country.country_info_str }}">{{ country.country.name }}</option>
                         {% endfor %}
                     </select>
