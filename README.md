@@ -176,7 +176,7 @@ sources. The boundary source covers most of African Countries.
 
 Below are steps to download and load the boundary data for a country of interest:
 
-- First you will need to acces¬s the
+- First you will need to access the
   OCHA's [Humanitarian Data Exchange](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)%20desc)
   Platform.
   This [link](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)%20desc)
@@ -260,11 +260,11 @@ country will be deleted and the new one saved.
 ## GADM 4.1 - Accessing, downloading and loading GADM 4.1 Data
 
 The [Global Administrative Areas 4.1 (GADM)](https://gadm.org/")  is a database of the location of the world's
-administrative areas (boundaries) Administrative areas in this database include: countries, counties, districts etc. and
-cover every country in the world. For each area it provides some attributes foremost being the name and in some cases
-variant names.
+administrative areas (boundaries). Administrative areas in this database include: countries, counties, districts etc.
+and cover every country in the world. For each area it provides some attributes foremost being the name and in some
+cases variant names.
 
-The most recent version is `4.1` and this is the version currently supported by this package.
+The most recent version is `4.1` and is the version currently supported by this package.
 
 ### Download GADM 4.1 data
 
@@ -283,9 +283,9 @@ The `Country` download interface will look like below:
 
 1. Select your country of interest. GADM data should available for all countries in the world.
 2. Look for the `Geopackage` download link. For GADM data, downloading a geopackage comes with all the data for all the
-   different levels
+   different levels. This allows to upload data for different levels of a country with one step.
 
-Once you download the country geopackage and save it somewhere in your computer, you are ready to load it.
+Once you download the `country geopackage` and saved it somewhere in your computer, you are ready to load it.
 
 ### Load GADM 4.1 data
 
@@ -316,10 +316,10 @@ and the new one saved.
 As explained in the [Boundary Model Structure](#boundary-model-structure) section, by following the defined model
 structure, you can add data from other sources.
 
-You will need to separate your country boundary dataset into the different levels. That means for example, form level 0
-of a country, you will a `zipped shapefile`, as so on for all the levels you want to upload.
+You will need to separate your country boundary dataset into the different levels. For example, for level 0 of a
+country, you will have one `zipped shapefile`, as so on for all the levels you want to upload.
 
-Your shapefile data should contain the following fields for each level.
+Your shapefile data should contain the following fields, for each level.
 
 #### Level 0
 
@@ -409,9 +409,12 @@ instance you wish to retrieve.
 
 Usually you will use this endpoint in conjunction with the search API.
 
-A use case will be to use the `Search Endpoint` to search for a given admin level by name in an autocomplete select
-input, show the matching results in the result dropdown. Once the user selects a result item, you can use the
-the `Retrieve endpoint` to retrieve the detail of the boundary, using the ID of the selected boundary item.
+**A sample use case will be:**
+
+- Use the `Search Endpoint` to search for an admin level by name in an autocomplete search input
+- Show the matching results in the result dropdown
+- Once the user selects a result item, you can use the the `Retrieve endpoint` to retrieve the detail of the boundary,
+  using the ID of the selected boundary item.
 
 ### Vector Tiles Endpoint
 
