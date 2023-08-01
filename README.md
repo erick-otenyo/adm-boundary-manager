@@ -442,7 +442,7 @@ Below is a quick snippet on how you can add boundary vector tile layers to your 
     });
 
 
-    const boundaryTilesUrl = "/api/admin-boundary/tiles/<int:z>/<int:x>/<int:y>`"
+    const boundaryTilesUrl = "/api/admin-boundary/tiles/{z}/{x}/{y}"
 
     map.on("load", () => {
 
