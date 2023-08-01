@@ -11,40 +11,39 @@ from adminboundarymanager.errors import (
     InvalidBoundaryGeomType,
     UnsupportedBoundaryLevel
 )
-from .models import AdminBoundary
-from .utils import extract_zipped_shapefile
+from adminboundarymanager.models import AdminBoundary
+from adminboundarymanager.utils import extract_zipped_shapefile
 
 COMMON_FIELDS = {
     "level": "LEVEL"
 }
 
 LEVEL0_BOUNDARY_FIELDS = {
-    **COMMON_FIELDS,
-    "name_0": "ADM0_EN",
-    "gid_0": "ADM0_PCODE",
+    "name_0": "NAME_0",
+    "gid_0": "GID_0",
 }
 LEVEL1_BOUNDARY_FIELDS = {
     **LEVEL0_BOUNDARY_FIELDS,
-    "name_1": "ADM1_EN",
-    "gid_1": "ADM1_PCODE",
+    "name_1": "NAME_1",
+    "gid_1": "GID_1",
 }
 
 LEVEL2_BOUNDARY_FIELDS = {
     **LEVEL1_BOUNDARY_FIELDS,
-    "name_2": "ADM2_EN",
-    "gid_2": "ADM2_PCODE",
+    "name_2": "NAME_2",
+    "gid_2": "GID_2",
 }
 
 LEVEL3_BOUNDARY_FIELDS = {
     **LEVEL2_BOUNDARY_FIELDS,
-    "name_3": "ADM3_EN",
-    "gid_3": "ADM3_PCODE",
+    "name_3": "NAME_3",
+    "gid_3": "GID_3",
 }
 
 LEVEL4_BOUNDARY_FIELDS = {
     **LEVEL3_BOUNDARY_FIELDS,
-    "name_4": "ADM4_EN",
-    "gid_4": "ADM4_PCODE",
+    "name_4": "NAME_4",
+    "gid_4": "GID_4",
 }
 
 GEOM_FIELD = {
@@ -53,9 +52,16 @@ GEOM_FIELD = {
 
 VALID_GEOM_TYPES = ["Polygon", "MultiPolygon"]
 
+GENERIC_FIELDS = {
+    "level_0": LEVEL0_BOUNDARY_FIELDS,
+    "level_1": LEVEL1_BOUNDARY_FIELDS,
+    "level_2": LEVEL2_BOUNDARY_FIELDS,
+    "level_3": LEVEL3_BOUNDARY_FIELDS,
+}
+
 
 @transaction.atomic
-def check_and_load_boundaries(shp_path, country_code, level, remove_existing=True):
+def check_and_load_boundaries(shp_path, country, level, remove_existing=True):
     # set required layermapping fields
     if level == 0:
         required_fields = LEVEL0_BOUNDARY_FIELDS
@@ -71,8 +77,16 @@ def check_and_load_boundaries(shp_path, country_code, level, remove_existing=Tru
         raise UnsupportedBoundaryLevel(
             f"Unsupported admin boundary level : '{level}'. Supported levels are 0, 1, 2, 3 and 4.")
 
+    required_fields.update({**COMMON_FIELDS})
+
     # read shapefile first layer
     gdf = gpd.read_file(shp_path, layer=0)
+
+    # format columns to upper
+    columns_rename_dict = {}
+    for column in list(gdf.columns):
+        columns_rename_dict[column] = column.upper()
+    gdf.rename(columns=columns_rename_dict)
 
     # assign level
     gdf = gdf.assign(LEVEL=level)
@@ -117,17 +131,17 @@ def check_and_load_boundaries(shp_path, country_code, level, remove_existing=Tru
 
         if remove_existing:
             # delete existing boundary data for given country iso and level
-            AdminBoundary.objects.filter(gid_0=country_code, level=level).delete()
+            AdminBoundary.objects.filter(gid_0=country.code, level=level).delete()
+            AdminBoundary.objects.filter(gid_0=country.alpha3, level=level).delete()
 
         # do layermapping and save
         lm = LayerMapping(AdminBoundary, temp_shapefile_path, layer_mapping_fields)
         lm.save(verbose=True)
 
 
-def load_cod_abs_boundary(shp_zip_path, country_code, level, remove_existing=True):
+def load_generic_boundary(shp_zip_path, country, level, remove_existing=True, **kwargs):
     with tempfile.TemporaryDirectory() as tmpdir:
         # extract shapefile to get .shp file
         shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir)
-
         # load boundaries
-        check_and_load_boundaries(shp_path, country_code, level, remove_existing)
+        check_and_load_boundaries(shp_path, country, level, remove_existing=remove_existing)
