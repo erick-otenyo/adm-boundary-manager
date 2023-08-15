@@ -12,7 +12,11 @@
 {% block content %}
     {% trans "Administrative Boundaries Data" as header_str %}
 
-    {% include "wagtailadmin/shared/header.html" with title=header_str icon="map" action_url=load_boundary_url action_text="Add Boundary" %}
+    {% if countries %}
+        {% include "wagtailadmin/shared/header.html" with title=header_str icon="map" action_url=load_boundary_url action_text="Add Boundary" %}
+    {% else %}
+        {% include "wagtailadmin/shared/header.html" with title=header_str icon="map" %}
+    {% endif %}
 
     <div class="nice-padding">
         <div style="margin-top: 40px;">
@@ -27,8 +31,27 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div id="preview-map" style="height: 600px;width: 100%"></div>
+
+            {% else %}
+                <div class="help-block help-warning">
+                    <svg class="icon icon-warning icon" aria-hidden="true">
+                        <use href="#icon-warning"></use>
+                    </svg>
+                    <div style="font-size: 16px">
+                        No country has been set yet. Please add a country from
+                        <a href="{{ settings_url }}"> boundary settings </a>
+                        to load or preview data
+                    </div>
+                </div>
+
+                <a href="{{ settings_url }}" class="button bicolor button--icon button-secondary"><span
+                        class="icon-wrapper">
+                    <svg class="icon icon-cog icon" aria-hidden="true">
+                        <use href="#icon-cog"></use>
+                    </svg>
+                </span>Add Country from Settings </a>
             {% endif %}
-            <div id="preview-map" style="height: 600px;width: 100%"></div>
         </div>
     </div>
 {% endblock %}
@@ -41,7 +64,14 @@
         const mapConfig = {{ mapConfig | safe }};
 
         const {combinedBbox, boundaryTilesUrl} = mapConfig
-        const bounds = [[combinedBbox[0], combinedBbox[1]], [combinedBbox[2], combinedBbox[3]]]
+
+        let bounds
+
+
+        if (combinedBbox && !!combinedBbox.length) {
+            bounds = [[combinedBbox[0], combinedBbox[1]], [combinedBbox[2], combinedBbox[3]]]
+        }
+
 
         const defaultStyle = {
             'version': 8,
@@ -120,7 +150,9 @@
                 }
             });
 
-            map.fitBounds(bounds, {padding: 50})
+            if (bounds) {
+                map.fitBounds(bounds, {padding: 50})
+            }
 
 
             $("#country_selector").on("change", function () {

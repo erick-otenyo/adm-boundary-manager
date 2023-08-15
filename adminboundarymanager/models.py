@@ -1,5 +1,3 @@
-import json
-
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
@@ -19,8 +17,6 @@ from wagtail.contrib.settings.models import BaseSiteSetting
 from wagtail.contrib.settings.registry import register_setting
 from wagtail.models import Orderable
 from wagtailcache.cache import clear_cache
-
-from adminboundarymanager.countries import get_country_info
 
 
 class AdminBoundary(models.Model):
@@ -108,20 +104,23 @@ class AdminBoundaryForm(WagtailAdminModelForm):
             if countries_must_share_boundaries and len(countries) > 1:
                 bounds_polygons = []
                 for country in countries:
-                    bounds_polygons.append(country.country_bounds_polygon)
+                    if country.country_bounds_polygon:
+                        bounds_polygons.append(country.country_bounds_polygon)
 
-                union_polygon = bounds_polygons[0]
-                for polygon in bounds_polygons[1:]:
-                    union_polygon = union_polygon.union(polygon)
+                if bounds_polygons:
+                    union_polygon = bounds_polygons[0]
 
-                connected = isinstance(union_polygon, Polygon)
-                if not connected:
-                    error = _("One or more selected countries do not share boundaries. "
-                              "Please make sure all the countries are in one region and share boundaries")
-                    # add error
-                    self.formsets.get("countries")._non_form_errors.append(error)
+                    for polygon in bounds_polygons[1:]:
+                        union_polygon = union_polygon.union(polygon)
 
-                    return False
+                    connected = isinstance(union_polygon, Polygon)
+                    if not connected:
+                        error = _("One or more selected countries do not share boundaries. "
+                                  "Please make sure all the countries are in one region and share boundaries")
+                        # add error
+                        self.formsets.get("countries")._non_form_errors.append(error)
+
+                        return False
 
         return form_is_valid
 
@@ -160,9 +159,8 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
                 "name": country.country.name,
                 "code": country.country.code,
                 "alpha3": country.country.alpha3,
-                **country.country_info
+                "bbox": country.country.geo_extent
             })
-
         return countries
 
     @cached_property
@@ -171,7 +169,7 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
         if bounds_polygons:
             combined_polygon = unary_union(bounds_polygons)
             return list(combined_polygon.bounds)
-        return None
+        return []
 
     def get_country_bounds_polygons(self):
         bounds_polygons = []
@@ -196,28 +194,17 @@ class Country(Orderable):
     ]
 
     @cached_property
-    def country_info(self):
-        country_info = get_country_info(self.country.alpha3)
-        return country_info
-
-    @cached_property
     def country_bounds_polygon(self):
-        country_info = self.country_info
-        bbox = country_info.get("bbox")
+        bbox = self.country.geo_extent
+        if not bbox:
+            return None
         polygon = geometry.box(*bbox, ccw=True)
         return polygon
 
-    @cached_property
-    def country_info_str(self):
-        country_info = get_country_info(self.country.alpha3)
-        if country_info:
-            return json.dumps(country_info)
-        return {}
 
-
-# clear cache after saving boundary settings
 @receiver(post_save, sender=AdminBoundarySettings)
-def handle_clear_wagtail_cache(sender, **kwargs):
+def handle_post_save_settings(sender, instance, **kwargs):
+    # clear cache after saving boundary settings
     clear_cache()
 
 
@@ -226,8 +213,29 @@ def handle_clear_wagtail_cache(sender, **kwargs):
 def after_country_delete(sender, instance, **kwargs):
     country = instance.country
 
-    # delete by 2-letter code
-    AdminBoundary.objects.filter(gid_0=country.code).delete()
+    country_codes = [country.code, country.alpha3]
 
-    # delete by 3-letter code
-    AdminBoundary.objects.filter(gid_0=country.alpha3).delete()
+    # delete admin boundaries for countries not in list
+    AdminBoundary.objects.filter(gid_0__in=country_codes).delete()
+
+
+@receiver(post_save, sender=Country)
+def after_country_save(sender, instance, created, **kwargs):
+    # get countries
+    countries = instance.parent.countries.all()
+
+    ready = True
+    codes = []
+
+    # check that all countries have been saved
+    for c in countries:
+        if not c.id:
+            ready = False
+
+    if ready:
+        for c in countries:
+            codes.append(c.country.code)
+            codes.append(c.country.alpha3)
+
+        # delete all boundaries not for set countries
+        AdminBoundary.objects.exclude(gid_0__in=codes).delete()

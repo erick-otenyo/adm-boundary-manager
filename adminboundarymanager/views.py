@@ -107,6 +107,11 @@ def preview_boundary(request):
 
     boundary_tiles_url = request.scheme + '://' + request.get_host() + boundary_tiles_url
 
+    settings_url = reverse(
+        "wagtailsettings:edit",
+        args=[AdminBoundarySettings._meta.app_label, AdminBoundarySettings._meta.model_name, ],
+    )
+
     context = {
         "mapConfig": {
             "boundaryTilesUrl": boundary_tiles_url,
@@ -114,7 +119,8 @@ def preview_boundary(request):
         },
         "countries": countries,
         "use_country_alpha3": boundary_data_source == "gadm41",
-        "load_boundary_url": reverse("adminboundarymanager_load_boundary")
+        "load_boundary_url": reverse("adminboundarymanager_load_boundary"),
+        "settings_url": settings_url
     }
 
     return render(request, template, context=context)
