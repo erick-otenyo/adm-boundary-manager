@@ -26,7 +26,11 @@ class GenericBoundaryUploadForm(forms.Form):
 
 
 class CodAbsBoundaryUploadForm(GenericBoundaryUploadForm):
-    pass
+    LANGUAGE_CHOICES = (
+        ("EN", "EN"),
+        ("FR", "FR"),
+    )
+    language_suffix = forms.ChoiceField(required=True, choices=LANGUAGE_CHOICES, label=_("Language suffix"))
 
 
 class GADMBoundaryUploadForm(forms.Form):

@@ -53,10 +53,14 @@ def load_boundary(request):
         if form.is_valid():
             file = form.cleaned_data.get("file")
             country_code = form.cleaned_data.get("country")
-            level = None
+            language_suffix = form.cleaned_data.get("language_suffix")
+            requires_language_suffix = False
 
             if abm_settings.data_source != "gadm41":
                 level = int(form.cleaned_data.get("level"))
+
+            if abm_settings.data_source == "codabs":
+                requires_language_suffix = True
 
             if not country_code:
                 form.add_error(None, "Please select a country in layer manager settings and try again")
@@ -68,7 +72,11 @@ def load_boundary(request):
                     temp_file.write(chunk)
 
                 try:
-                    loader_fn(temp_file.name, country=country_option.country, level=level)
+                    if requires_language_suffix and language_suffix:
+                        loader_fn(temp_file.name, country=country_option.country, level=level,
+                                  lang_suffix=language_suffix)
+                    else:
+                        loader_fn(temp_file.name, country=country_option.country, level=level, )
                 except Exception as e:
                     form.add_error(None, str(e))
                     context.update({"form": form, "has_error": True})

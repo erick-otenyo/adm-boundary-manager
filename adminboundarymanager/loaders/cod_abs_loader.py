@@ -18,33 +18,44 @@ COMMON_FIELDS = {
     "level": "LEVEL"
 }
 
-LEVEL0_BOUNDARY_FIELDS = {
-    "name_0": "ADM0_EN",
-    "gid_0": "ADM0_PCODE",
-}
-LEVEL1_BOUNDARY_FIELDS = {
-    **LEVEL0_BOUNDARY_FIELDS,
-    "name_1": "ADM1_EN",
-    "gid_1": "ADM1_PCODE",
-}
 
-LEVEL2_BOUNDARY_FIELDS = {
-    **LEVEL1_BOUNDARY_FIELDS,
-    "name_2": "ADM2_EN",
-    "gid_2": "ADM2_PCODE",
-}
+def get_fields_for_lang(lang_suffix="EN"):
+    LEVEL0_BOUNDARY_FIELDS = {
+        "name_0": f"ADM0_{lang_suffix}",
+        "gid_0": "ADM0_PCODE",
+    }
+    LEVEL1_BOUNDARY_FIELDS = {
+        **LEVEL0_BOUNDARY_FIELDS,
+        "name_1": f"ADM1_{lang_suffix}",
+        "gid_1": "ADM1_PCODE",
+    }
 
-LEVEL3_BOUNDARY_FIELDS = {
-    **LEVEL2_BOUNDARY_FIELDS,
-    "name_3": "ADM3_EN",
-    "gid_3": "ADM3_PCODE",
-}
+    LEVEL2_BOUNDARY_FIELDS = {
+        **LEVEL1_BOUNDARY_FIELDS,
+        "name_2": f"ADM2_{lang_suffix}",
+        "gid_2": "ADM2_PCODE",
+    }
 
-LEVEL4_BOUNDARY_FIELDS = {
-    **LEVEL3_BOUNDARY_FIELDS,
-    "name_4": "ADM4_EN",
-    "gid_4": "ADM4_PCODE",
-}
+    LEVEL3_BOUNDARY_FIELDS = {
+        **LEVEL2_BOUNDARY_FIELDS,
+        "name_3": f"ADM3_{lang_suffix}",
+        "gid_3": "ADM3_PCODE",
+    }
+
+    LEVEL4_BOUNDARY_FIELDS = {
+        **LEVEL3_BOUNDARY_FIELDS,
+        "name_4": f"ADM4_{lang_suffix}",
+        "gid_4": "ADM4_PCODE",
+    }
+
+    return {
+        "level_0": LEVEL0_BOUNDARY_FIELDS,
+        "level_1": LEVEL1_BOUNDARY_FIELDS,
+        "level_2": LEVEL2_BOUNDARY_FIELDS,
+        "level_3": LEVEL3_BOUNDARY_FIELDS,
+        "level_4": LEVEL4_BOUNDARY_FIELDS,
+    }
+
 
 GEOM_FIELD = {
     "geom": "MULTIPOLYGON",
@@ -52,27 +63,22 @@ GEOM_FIELD = {
 
 VALID_GEOM_TYPES = ["Polygon", "MultiPolygon"]
 
-COD_ABS_FIELDS = {
-    "level_0": LEVEL0_BOUNDARY_FIELDS,
-    "level_1": LEVEL1_BOUNDARY_FIELDS,
-    "level_2": LEVEL2_BOUNDARY_FIELDS,
-    "level_3": LEVEL3_BOUNDARY_FIELDS,
-}
-
 
 @transaction.atomic
-def check_and_load_boundaries(shp_path, country, level, remove_existing=True):
+def check_and_load_boundaries(shp_path, country, level, remove_existing=True, lang_suffix="EN"):
+    fields = get_fields_for_lang(lang_suffix)
+
     # set required layermapping fields
     if level == 0:
-        required_fields = LEVEL0_BOUNDARY_FIELDS
+        required_fields = fields.get("level_0")
     elif level == 1:
-        required_fields = LEVEL1_BOUNDARY_FIELDS
+        required_fields = fields.get("level_1")
     elif level == 2:
-        required_fields = LEVEL2_BOUNDARY_FIELDS
+        required_fields = fields.get("level_2")
     elif level == 3:
-        required_fields = LEVEL3_BOUNDARY_FIELDS
+        required_fields = fields.get("level_3")
     elif level == 4:
-        required_fields = LEVEL4_BOUNDARY_FIELDS
+        required_fields = fields.get("level_4")
     else:
         raise UnsupportedBoundaryLevel(
             f"Unsupported admin boundary level : '{level}'. Supported levels are 0, 1, 2, 3 and 4.")
@@ -134,10 +140,10 @@ def check_and_load_boundaries(shp_path, country, level, remove_existing=True):
         lm.save(verbose=True)
 
 
-def load_cod_abs_boundary(shp_zip_path, country, level, remove_existing=True, **kwargs):
+def load_cod_abs_boundary(shp_zip_path, country, level, remove_existing=True, lang_suffix="EN", **kwargs):
     with tempfile.TemporaryDirectory() as tmpdir:
         # extract shapefile to get .shp file
         shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir)
 
         # load boundaries
-        check_and_load_boundaries(shp_path, country, level, remove_existing)
+        check_and_load_boundaries(shp_path, country, level, remove_existing, lang_suffix=lang_suffix)

@@ -1,4 +1,4 @@
-from .cod_abs_loader import load_cod_abs_boundary, COD_ABS_FIELDS
+from .cod_abs_loader import load_cod_abs_boundary
 from .gadm_loader import load_gadm_boundary
 from .generic_loader import load_generic_boundary, GENERIC_FIELDS
 
@@ -22,12 +22,7 @@ data_sources = {
         "data_download_url": "https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced"
                              "&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt("
                              "last_modified%2Creview_date)%2Clast_modified%2Creview_date)%20desc",
-        "levels": [
-            {"level": 0, "fields": COD_ABS_FIELDS.get("level_0")},
-            {"level": 1, "fields": COD_ABS_FIELDS.get("level_1")},
-            {"level": 2, "fields": COD_ABS_FIELDS.get("level_1")},
-            {"level": 3, "fields": COD_ABS_FIELDS.get("level_1")},
-        ]
+        "levels": []
     },
     "gadm41": {
         "title": "Global Administrative Areas 4.1 (GADM)",
