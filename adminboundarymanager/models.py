@@ -166,10 +166,10 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
     @cached_property
     def combined_countries_bounds(self):
         bounds_polygons = self.get_country_bounds_polygons()
-        if bounds_polygons:
-            combined_polygon = unary_union(bounds_polygons)
-            return list(combined_polygon.bounds)
-        return []
+        if not bounds_polygons:
+            return None
+        combined_polygon = unary_union(bounds_polygons)
+        return list(combined_polygon.bounds)
 
     def get_country_bounds_polygons(self):
         bounds_polygons = []
