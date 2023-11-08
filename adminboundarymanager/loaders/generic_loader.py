@@ -139,7 +139,7 @@ def check_and_load_boundaries(shp_path, country, level, remove_existing=True):
         lm.save(verbose=True)
 
 
-def load_generic_boundary(shp_zip_path, country, level, remove_existing=True, **kwargs):
+def load_generic_boundary(shp_zip_path, country, level=1, remove_existing=True, **kwargs):
     with tempfile.TemporaryDirectory() as tmpdir:
         # extract shapefile to get .shp file
         shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir)

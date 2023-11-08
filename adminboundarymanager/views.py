@@ -56,6 +56,8 @@ def load_boundary(request):
             language_suffix = form.cleaned_data.get("language_suffix")
             requires_language_suffix = False
 
+            level = None
+
             if abm_settings.data_source != "gadm41":
                 level = int(form.cleaned_data.get("level"))
 
