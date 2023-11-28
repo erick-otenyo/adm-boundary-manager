@@ -111,8 +111,8 @@ def check_and_load_boundaries(geopackage_path, country, remove_existing=True, ga
 
         if remove_existing:
             # delete existing boundary data for given country iso
-            AdminBoundary.objects.filter(gid_0=country.alpha3).delete()
-            AdminBoundary.objects.filter(gid_0=country.code).delete()
+            AdminBoundary.objects.filter(gid_0=country.alpha3, level=level).delete()
+            AdminBoundary.objects.filter(gid_0=country.code, level=level).delete()
 
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_shapefile_path = os.path.join(tmpdir, f'{layer_name}_shapefile.shp')
