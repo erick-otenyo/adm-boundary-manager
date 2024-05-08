@@ -6,7 +6,7 @@
 {% endblocktrans %}{% endblock %}
 {% block extra_css %}
     {{ block.super }}
-    <link href="https://unpkg.com/maplibre-gl@3.1.0/dist/maplibre-gl.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'adminboundarymanager/css/maplibre-gl.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -58,7 +58,7 @@
 
 {% block extra_js %}
     {{ block.super }}
-    <script src="https://unpkg.com/maplibre-gl@3.1.0/dist/maplibre-gl.js"></script>
+    <script src="{% static 'adminboundarymanager/js/maplibre-gl.js' %}"></script>
     <script>
 
         const mapConfig = {{ mapConfig | safe }};

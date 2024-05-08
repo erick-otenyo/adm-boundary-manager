@@ -35,7 +35,6 @@ if os.path.isfile(os.path.join(os.path.dirname(BASE_DIR), '.env')):
 
 INSTALLED_APPS = [
     "home",
-    "search",
 
     "adminboundarymanager",
     "django_countries",
@@ -43,7 +42,7 @@ INSTALLED_APPS = [
 
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
-    "wagtail.contrib.modeladmin",
+    "wagtail_modeladmin",
     "wagtail.contrib.settings",
     "wagtail.contrib.styleguide",
     "wagtail.embeds",

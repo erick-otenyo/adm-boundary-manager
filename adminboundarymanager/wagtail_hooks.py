@@ -2,7 +2,7 @@ from django.urls import path, reverse
 from django.utils.translation import gettext_lazy as _
 from wagtail import hooks
 from wagtail.admin.menu import MenuItem
-from wagtail.contrib.modeladmin.options import ModelAdminGroup, ModelAdmin
+from wagtail_modeladmin.options import ModelAdminGroup, ModelAdmin
 
 from .models import AdminBoundarySettings, AdminBoundary
 from .views import load_boundary, preview_boundary
