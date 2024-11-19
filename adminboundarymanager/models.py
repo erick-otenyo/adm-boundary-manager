@@ -186,6 +186,7 @@ class AdminBoundarySettings(BaseSiteSetting, ClusterableModel):
 
 
 class Country(Orderable):
+    objects = None
     parent = ParentalKey(AdminBoundarySettings, on_delete=models.CASCADE, related_name='countries')
     country = CountryField(blank_label=_("Select Country"), verbose_name=_("country"), unique=True)
 
@@ -212,30 +213,36 @@ def handle_post_save_settings(sender, instance, **kwargs):
 @receiver(post_delete, sender=Country)
 def after_country_delete(sender, instance, **kwargs):
     country = instance.country
+    country_codes_to_delete = [country.code, country.alpha3]
 
-    country_codes = [country.code, country.alpha3]
-
-    # delete admin boundaries for countries not in list
-    AdminBoundary.objects.filter(gid_0__in=country_codes).delete()
+    # delete admin boundaries for countries in list
+    AdminBoundary.objects.filter(gid_0__in=country_codes_to_delete).delete()
 
 
 @receiver(post_save, sender=Country)
 def after_country_save(sender, instance, created, **kwargs):
     # get countries
-    countries = instance.parent.countries.all()
+    setting_countries = instance.parent.countries.all()
 
     ready = True
-    codes = []
+    codes_not_to_delete = []
 
     # check that all countries have been saved
-    for c in countries:
-        if not c.id:
+    for country in setting_countries:
+        # check if the country has been saved to db
+        if not country.id:
             ready = False
 
     if ready:
-        for c in countries:
-            codes.append(c.country.code)
-            codes.append(c.country.alpha3)
+        for c in setting_countries:
+            codes_not_to_delete.append(c.country.code)
+            codes_not_to_delete.append(c.country.alpha3)
+
+        # all countries
+        all_countries = Country.objects.all()
+        for country in all_countries:
+            codes_not_to_delete.append(country.country.code)
+            codes_not_to_delete.append(country.country.alpha3)
 
         # delete all boundaries not for set countries
-        AdminBoundary.objects.exclude(gid_0__in=codes).delete()
+        AdminBoundary.objects.exclude(gid_0__in=codes_not_to_delete).delete()

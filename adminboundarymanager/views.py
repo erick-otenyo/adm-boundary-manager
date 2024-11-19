@@ -1,7 +1,7 @@
 import tempfile
 
 from django.db import connection, close_old_connections
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -141,11 +141,14 @@ class AdminBoundaryVectorTileView(View):
     table_name = "adminboundarymanager_adminboundary"
 
     def get(self, request, z, x, y):
-        gid_0 = request.GET.get("gid_0")
-        boundary_filter = ""
+        abm_settings = AdminBoundarySettings.for_request(request)
+        country_list = abm_settings.countries_list
+        codes = [item for country in country_list for item in (country.get("code"), country.get("alpha3"))]
+        boundary_filter = f"AND gid_0 IN {tuple(codes)}"
 
-        if gid_0:
-            boundary_filter = f"AND t.gid_0='{gid_0}'"
+        gid_0 = request.GET.get("gid_0")
+        if gid_0 and gid_0 in codes:
+            boundary_filter = f"AND gid_0 = '{gid_0}'"
 
         sql = f"""WITH
             bounds AS (
@@ -180,3 +183,27 @@ class AdminBoundaryListView(ListAPIView):
 class AdminBoundaryRetrieveView(RetrieveAPIView):
     queryset = AdminBoundary.objects.all()
     serializer_class = AdminBoundarySerializer
+
+
+def get_boundary_info(request):
+    context = {}
+
+    abm_settings = AdminBoundarySettings.for_request(request)
+
+    if not abm_settings.countries.exists():
+        return JsonResponse({})
+
+    site = abm_settings.site
+    boundary_tiles_url = abm_settings.boundary_tiles_url
+    boundary_tiles_url = site.root_url + boundary_tiles_url
+
+    boundary_detail_url = reverse("admin_boundary_detail", args=[0]).replace("/0", "")
+    boundary_detail_url = site.root_url + boundary_detail_url
+
+    context.update({
+        "tiles_url": boundary_tiles_url,
+        "detail_url": boundary_detail_url,
+        "country_bounds": abm_settings.combined_countries_bounds
+    })
+
+    return JsonResponse(context)
