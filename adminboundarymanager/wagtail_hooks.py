@@ -1,7 +1,9 @@
+from django.contrib.auth.models import Permission
 from django.urls import path, reverse
 from django.utils.translation import gettext_lazy as _
 from wagtail import hooks
-from wagtail.admin.menu import MenuItem
+from wagtail.admin.menu import MenuItem, Menu
+from wagtail_modeladmin.menus import GroupMenuItem
 from wagtail_modeladmin.options import ModelAdminGroup, ModelAdmin
 
 from .models import AdminBoundarySettings, AdminBoundary
@@ -36,18 +38,28 @@ class AdminBoundaryModelAdmin(ModelAdminCanHide):
     hidden = True
 
 
+class AdminBoundaryMenuGroupAdminMenuItem(GroupMenuItem):
+    def is_shown(self, request):
+        return request.user.has_perm("adminboundarymanager.can_view_adm_boundary_menu")
+
+
 class AdminBoundaryManagerAdminGroup(ModelAdminGroupWithHiddenItems):
     menu_label = _('Boundary Manager')
     menu_order = 700
     items = (AdminBoundaryModelAdmin,)
-
+    
+    def get_menu_item(self, order=None):
+        if self.modeladmin_instances:
+            submenu = Menu(items=self.get_submenu_items())
+            return AdminBoundaryMenuGroupAdminMenuItem(self, self.get_menu_order(), submenu)
+    
     def get_submenu_items(self):
         menu_items = super().get_submenu_items()
-
+        
         boundary_loader = MenuItem(label=_("Boundary Data"), url=reverse("adminboundarymanager_preview_boundary"),
                                    icon_name="snippet")
         menu_items.append(boundary_loader)
-
+        
         try:
             settings_url = reverse(
                 "wagtailsettings:edit",
@@ -57,5 +69,10 @@ class AdminBoundaryManagerAdminGroup(ModelAdminGroupWithHiddenItems):
             menu_items.append(abm_settings_menu)
         except Exception:
             pass
-
+        
         return menu_items
+
+
+@hooks.register("register_permissions")
+def register_permissions():
+    return Permission.objects.filter(content_type__app_label="adminboundarymanager")
