@@ -35,11 +35,11 @@ if os.path.isfile(os.path.join(os.path.dirname(BASE_DIR), '.env')):
 
 INSTALLED_APPS = [
     "home",
-
+    
     "adminboundarymanager",
     "django_countries",
     "wagtailcache",
-
+    
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail_modeladmin",
@@ -54,19 +54,20 @@ INSTALLED_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail",
-
+    
     "modelcluster",
     "taggit",
     "rest_framework",
     "django_filters",
     "corsheaders",
-
+    
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django.contrib.postgres',
     "django.contrib.gis",
 ]
 

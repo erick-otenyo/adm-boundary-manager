@@ -46,10 +46,9 @@ INSTALLED_APPS = [
     "adminboundarymanager",
     "django_countries",
     "wagtailcache",
-
-    "wagtail.contrib.modeladmin",
+    
     "wagtail.contrib.settings",
-
+    
     "django.contrib.gis",
 ]
 ```
@@ -85,14 +84,17 @@ In an existing or new Wagtail app, add the following to the `wagtail_hooks.py` f
 yet.
 
 ```python
-from wagtail.contrib.modeladmin.options import modeladmin_register
+from wagtail import hooks
 
-from adminboundarymanager.wagtail_hooks import AdminBoundaryManagerAdminGroup
+from adminboundarymanager.wagtail_hooks import AdminBoundaryViewSetGroup
 
-modeladmin_register(AdminBoundaryManagerAdminGroup)
+
+@hooks.register("register_admin_viewset")
+def register_viewset():
+    return AdminBoundaryViewSetGroup()
 ```
 
-This will add a `Boundary Manager` menu to the Wagtail Admin side panel, as in the below screenshot:
+This will add a `Boundaries` menu to the Wagtail Admin side panel, as in the below screenshot:
 
 ![Accessing admin](screenshots/abm_admin_access.png)
 
@@ -177,9 +179,11 @@ sources. The boundary source covers most of African Countries.
 Below are steps to download and load the boundary data for a country of interest:
 
 - First you will need to access the
-  OCHA's [Humanitarian Data Exchange](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)%20desc)
+  OCHA's [Humanitarian Data Exchange](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)
+  %20desc)
   Platform.
-  This [link](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)%20desc)
+  This [link](https://data.humdata.org/dashboards/cod?cod_level=cod-standard&cod_level=cod-enhanced&dataseries_name=COD%20-%20Subnational%20Administrative%20Boundaries&q=&sort=if(gt(last_modified%2Creview_date)%2Clast_modified%2Creview_date)
+  %20desc)
   will take you directly to the COD-AB data download page, similar to the below screenshot:
 
 ![OCHA COD-AB download](screenshots/cod_ab_access.png)
