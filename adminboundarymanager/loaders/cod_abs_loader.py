@@ -64,6 +64,37 @@ GEOM_FIELD = {
 VALID_GEOM_TYPES = ["Polygon", "MultiPolygon"]
 
 
+def _first_value(gdf, column):
+    values = gdf[column].dropna()
+    return str(values.iloc[0]).lower() if len(values) else ""
+
+
+def normalize_cod_fields(gdf, level, lang_suffix="EN"):
+    """Rename current COD-AB columns to the legacy ones the field maps expect.
+
+    Since 2024 COD-AB packages use lowercase adm{n}_pcode and adm{n}_name, with
+    alternate-language names in adm{n}_name1..3 and their language codes in lang,
+    lang1..3, instead of ADM{n}_PCODE and ADM{n}_{LANG}. Legacy files pass through.
+    """
+    columns = {c.lower(): c for c in gdf.columns}
+    renames = {}
+    for n in range(level + 1):
+        pcode, name = f"ADM{n}_PCODE", f"ADM{n}_{lang_suffix}"
+        if pcode not in gdf.columns and f"adm{n}_pcode" in columns:
+            renames[columns[f"adm{n}_pcode"]] = pcode
+        if name not in gdf.columns:
+            names = [k for k in ("", "1", "2", "3") if f"adm{n}_name{k}" in columns]
+            # the name column in the requested language, else the primary one
+            in_lang = [
+                k for k in names
+                if f"lang{k}" in columns and _first_value(gdf, columns[f"lang{k}"]) == lang_suffix.lower()
+            ]
+            chosen = (in_lang or [k for k in names if k == ""] or [None])[0]
+            if chosen is not None:
+                renames[columns[f"adm{n}_name{chosen}"]] = name
+    return gdf.rename(columns=renames)
+
+
 @transaction.atomic
 def check_and_load_boundaries(shp_path, country, level, remove_existing=True, lang_suffix="EN"):
     fields = get_fields_for_lang(lang_suffix)
@@ -87,7 +118,7 @@ def check_and_load_boundaries(shp_path, country, level, remove_existing=True, la
     required_fields.update({**COMMON_FIELDS})
 
     # read shapefile first layer
-    gdf = gpd.read_file(shp_path, layer=0)
+    gdf = normalize_cod_fields(gpd.read_file(shp_path, layer=0), level, lang_suffix)
 
     # assign level
     gdf = gdf.assign(LEVEL=level)
@@ -143,7 +174,7 @@ def check_and_load_boundaries(shp_path, country, level, remove_existing=True, la
 def load_cod_abs_boundary(shp_zip_path, country, level=1, remove_existing=True, lang_suffix="EN", **kwargs):
     with tempfile.TemporaryDirectory() as tmpdir:
         # extract shapefile to get .shp file
-        shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir)
+        shp_path = extract_zipped_shapefile(shp_zip_path, tmpdir, level=level)
 
         # load boundaries
         check_and_load_boundaries(shp_path, country, level, remove_existing, lang_suffix=lang_suffix)
